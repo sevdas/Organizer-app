@@ -1,0 +1,67 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  email     String    @unique
+  firstName String
+  lastName  String
+  password  String
+  projects  Project[]
+  tasks     Task[]
+}
+
+model Project {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  name    String
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id]) // each project has an owner
+
+  description String?
+  due         DateTime?
+  deleted     Boolean   @default(false)
+  tasks       Task[]
+
+  @@unique([ownerId, name]) // create an unique constrain on this complex field by taking combination of an ownerId and name and make it unique. Do not allow two projects with the sama name
+  @@index([ownerId, id]) // to query (find) a project that belongs to this owner and has that id.
+}
+
+enum TASK_STATUS {
+  NOT_STARTED
+  STARTED
+  COMPLETED
+}
+
+model Task {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  name        String
+  description String?
+  ownerId     String
+  owner       User    @relation(fields: [ownerId], references: [id]) // get all the tasks that the user created no matter what project they are on
+  projectId   String
+  project     Project @relation(fields: [projectId], references: [id]) // tasks belongs to a project
+
+  status  TASK_STATUS @default(NOT_STARTED)
+  due     DateTime?
+  deleted Boolean     @default(false)
+
+    @@index([ownerId]) 
+}
